@@ -6,130 +6,135 @@ import pandas as pd
 import streamlit as st
 
 
-def nearest(lst, target):
-    return min(lst, key=lambda x: abs(x - target))
 
 
-def distr_main():
-    lc, rc = st.columns(2, gap='large')
+st.write('Welcome to Streamlit')
 
-    rc.text('')
-    rc.text('')
-    ratio = rc.slider("Select the ratio (adjust for better result)", min_value=0.1, max_value=1.0, value=0.2, step=0.05)
-    # iterations = rc.slider("Iteration Quantity (adjust for better result)", min_value=3, max_value=50, value=5, step=1,)
 
-    load_list = lc.file_uploader("LOAD LIST loader", type='xlsx', key='for_single_phases')
+# def nearest(lst, target):
+#     return min(lst, key=lambda x: abs(x - target))
 
-    st.divider()
-    lc, rc = st.columns(2, gap='large')
 
-    if not load_list:
-        st.info("ADD LOAD LIST")
-        st.stop()
+# def distr_main():
+#     lc, rc = st.columns(2, gap='large')
 
-    loads_df = pd.read_excel(load_list, sheet_name="Sheet1")
+#     rc.text('')
+#     rc.text('')
+#     ratio = rc.slider("Select the ratio (adjust for better result)", min_value=0.1, max_value=1.0, value=0.2, step=0.05)
+#     # iterations = rc.slider("Iteration Quantity (adjust for better result)", min_value=3, max_value=50, value=5, step=1,)
 
-    iterations = len(loads_df) + 5
+#     load_list = lc.file_uploader("LOAD LIST loader", type='xlsx', key='for_single_phases')
 
-    lc.subheader('Initial Load List')
-    lc.data_editor(loads_df, use_container_width=True)
+#     st.divider()
+#     lc, rc = st.columns(2, gap='large')
 
-    lc.write(f"#### {len(loads_df)} loads. Consumption: {loads_df.load.sum()} kW")
+#     if not load_list:
+#         st.info("ADD LOAD LIST")
+#         st.stop()
 
-    f_max = 0
-    let_max = ''
-    f_min_init = loads_df.load.sum()
-    let_min = ''
+#     loads_df = pd.read_excel(load_list, sheet_name="Sheet1")
 
-    f_min = f_min_init
-    # st.write(f"f_min:{f_min}")
+#     iterations = len(loads_df) + 5
 
-    final_df = pd.DataFrame(columns=['consumer_name', 'load', 'phase'])
+#     lc.subheader('Initial Load List')
+#     lc.data_editor(loads_df, use_container_width=True)
 
-    while len(loads_df):
+#     lc.write(f"#### {len(loads_df)} loads. Consumption: {loads_df.load.sum()} kW")
 
-        for f in ("A", "B", "C"):
-            if len(loads_df):
-                ind_max = loads_df.load.idxmax()
-                ind_min = loads_df.load.idxmin()
+#     f_max = 0
+#     let_max = ''
+#     f_min_init = loads_df.load.sum()
+#     let_min = ''
 
-                loads_df.loc[ind_max, 'phase'] = f
-                loads_df.loc[ind_min, 'phase'] = f
+#     f_min = f_min_init
+#     # st.write(f"f_min:{f_min}")
 
-                load_name_max = (loads_df.loc[[ind_max], 'consumer_name'].to_numpy()[0])
-                load_name_min = (loads_df.loc[[ind_min], 'consumer_name'].to_numpy()[0])
+#     final_df = pd.DataFrame(columns=['consumer_name', 'load', 'phase'])
 
-                if load_name_max == load_name_min:
-                    final_df = pd.concat([final_df, loads_df.loc[[ind_max]]])
-                else:
-                    final_df = pd.concat([final_df, loads_df.loc[[ind_max]]])
-                    final_df = pd.concat([final_df, loads_df.loc[[ind_min]]])
+#     while len(loads_df):
 
-                loads_df = loads_df.drop([ind_max, ind_min])
+#         for f in ("A", "B", "C"):
+#             if len(loads_df):
+#                 ind_max = loads_df.load.idxmax()
+#                 ind_min = loads_df.load.idxmin()
 
-    for iterat in range(1, iterations):
+#                 loads_df.loc[ind_max, 'phase'] = f
+#                 loads_df.loc[ind_min, 'phase'] = f
 
-        f_max = 0
-        f_min = f_min_init
+#                 load_name_max = (loads_df.loc[[ind_max], 'consumer_name'].to_numpy()[0])
+#                 load_name_min = (loads_df.loc[[ind_min], 'consumer_name'].to_numpy()[0])
 
-        for f in ("A", "B", "C"):
+#                 if load_name_max == load_name_min:
+#                     final_df = pd.concat([final_df, loads_df.loc[[ind_max]]])
+#                 else:
+#                     final_df = pd.concat([final_df, loads_df.loc[[ind_max]]])
+#                     final_df = pd.concat([final_df, loads_df.loc[[ind_min]]])
 
-            f_sum = final_df.loc[final_df.phase == f, 'load'].sum()
+#                 loads_df = loads_df.drop([ind_max, ind_min])
 
-            if f_sum > f_max:
-                f_max = f_sum
-                let_max = f
+#     for iterat in range(1, iterations):
 
-            if f_sum < f_min:
-                f_min = f_sum
-                let_min = f
+#         f_max = 0
+#         f_min = f_min_init
 
-        half_delta = (f_max - f_min) / (2 * iterat * ratio)
-        l = final_df.loc[final_df.phase == let_max, 'load'].tolist()
-        nearest_value = nearest(l, half_delta)
-        nearest_index = final_df[(final_df.load == nearest_value) & (final_df.phase == let_max)].index[0]
-        final_df.loc[nearest_index, 'phase'] = let_min
+#         for f in ("A", "B", "C"):
 
-    rc.subheader('Distributed Load List')
-    rc.data_editor(final_df, use_container_width=True)
+#             f_sum = final_df.loc[final_df.phase == f, 'load'].sum()
 
-    rc.write(f"#### {len(final_df)} loads. Consumption: {final_df.load.sum()} kW")
-    st.divider()
+#             if f_sum > f_max:
+#                 f_max = f_sum
+#                 let_max = f
 
-    c1, c2,c3 = st.columns(3, gap='large')
+#             if f_sum < f_min:
+#                 f_min = f_sum
+#                 let_min = f
 
-    f_max = 0
-    f_min = f_min_init
+#         half_delta = (f_max - f_min) / (2 * iterat * ratio)
+#         l = final_df.loc[final_df.phase == let_max, 'load'].tolist()
+#         nearest_value = nearest(l, half_delta)
+#         nearest_index = final_df[(final_df.load == nearest_value) & (final_df.phase == let_max)].index[0]
+#         final_df.loc[nearest_index, 'phase'] = let_min
 
-    for f in ("A", "B", "C"):
-        f_sum = final_df.loc[final_df.phase == f, 'load'].sum()
+#     rc.subheader('Distributed Load List')
+#     rc.data_editor(final_df, use_container_width=True)
 
-        if f_sum > f_max:
-            f_max = f_sum
-            let_max = f
+#     rc.write(f"#### {len(final_df)} loads. Consumption: {final_df.load.sum()} kW")
+#     st.divider()
 
-        if f_sum < f_min:
-            f_min = f_sum
-            let_min = f
+#     c1, c2,c3 = st.columns(3, gap='large')
 
-        c1.write(f"Phase {f}: {f_sum} kW")
+#     f_max = 0
+#     f_min = f_min_init
 
-    c2.write(f"Max: Phase {let_max}: {f_max} kW")
-    c2.write(f"Min: Phase {let_min}: {f_min} kW")
+#     for f in ("A", "B", "C"):
+#         f_sum = final_df.loc[final_df.phase == f, 'load'].sum()
 
-    c2.write(f"### Delta: {f_max - f_min} kW")
+#         if f_sum > f_max:
+#             f_max = f_sum
+#             let_max = f
 
-    final_df.set_index('consumer_name', inplace=True)
+#         if f_sum < f_min:
+#             f_min = f_sum
+#             let_min = f
 
-    buffer = io.BytesIO()
+#         c1.write(f"Phase {f}: {f_sum} kW")
 
-    with pd.ExcelWriter(buffer) as writer:
-        final_df.to_excel(writer)
-    c3.text('')
-    c3.text('')
-    c3.text('')
+#     c2.write(f"Max: Phase {let_max}: {f_max} kW")
+#     c2.write(f"Min: Phase {let_min}: {f_min} kW")
 
-    c3.download_button(
-        label='Get Distributed Load List here', data=buffer,
-        file_name=f'Distributed Loads {datetime.datetime.today().strftime("%Y-%m-%d-%H-%M")}.xlsx'
-    )
+#     c2.write(f"### Delta: {f_max - f_min} kW")
+
+#     final_df.set_index('consumer_name', inplace=True)
+
+#     buffer = io.BytesIO()
+
+#     with pd.ExcelWriter(buffer) as writer:
+#         final_df.to_excel(writer)
+#     c3.text('')
+#     c3.text('')
+#     c3.text('')
+
+#     c3.download_button(
+#         label='Get Distributed Load List here', data=buffer,
+#         file_name=f'Distributed Loads {datetime.datetime.today().strftime("%Y-%m-%d-%H-%M")}.xlsx'
+#     )
